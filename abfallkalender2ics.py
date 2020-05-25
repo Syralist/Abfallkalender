@@ -25,7 +25,7 @@ duration_hour = 1
 ######
 
 # Hilfsvariablen
-offset_string = f" !!{offset_hours:02d}:00"
+offset_string = f" !!-{offset_hours:02d}:00"
 
 # globale Variablen vorbelegen
 d = {}
