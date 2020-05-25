@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup
+import csv
 from ics import Calendar, Event
 import re
 import arrow
@@ -6,8 +6,8 @@ from dateutil import tz
 import datetime
 
 ###### Einstellungen ######
-# Html-Datei von der Eno
-html = r"Abfallkalender von Entsorgung-kommunal.html"
+# CSV-Datei von der Eno
+csv_file = r"Abfuhrtermine für  Auf dem Kamp.csv"
 # Soll die Art der Abfuhr in den Titel eingetragen werden? True/False
 descriptive_title = True
 # Soll für die HomeAssistant Integration ein Offset eingetragen werden? 0..23
@@ -26,60 +26,46 @@ duration_hour = 1
 
 # Hilfsvariablen
 offset_string = f" !!{offset_hours:02d}:00"
-re_year = re.compile(r"[a-zA-z]*\s*(\d{4})$")
-re_date = re.compile(r"(?:\(\w{2}\)\s)?(\d{2})\.(\d{2})\.\s*([\w\ \/\.]*)$")
 
 # globale Variablen vorbelegen
-year = None
+d = {}
 c = Calendar()
 
 ## Datei öffnen
-with open(html) as f:
-    # HTML parsen
-    soup = BeautifulSoup(f, "lxml")
-    # Tabelle auswählen und über die Zeilen und Spalten iterieren
-    rows = soup.find("table").find("tbody").find_all("tr")
-    for row in rows[8:]:
-        cells = row.find_all("td")
-        for cell in cells:
-            try:
-                # Die Zelle mit den Terminen suchen
-                if "top" in cell["valign"]:
-                    # Den Text in der Zelle durchsuchen
-                    for line in cell.text.split('\n'):
-                        # Das Jahr auslesen mit RegEx
-                        year_match = re.match(re_year, line)
-                        if year_match:
-                            year = year_match.group(1)
-                            print(year)
-                        # Einen Termin auslesen mit RegEx
-                        date_match = re.match(re_date, line)
-                        if date_match:
-                            # Datum und Text auslesen
-                            day = date_match.group(1)
-                            month = date_match.group(2)
-                            item = date_match.group(3)
-                            print(day, month, item)
-                            # Event anlegen
-                            e = Event()
-                            # Titel zusammenbauen
-                            e.name = f"Müllabfuhr{(' ' + item) if descriptive_title else ''}{offset_string if offset_hours > 0 else ''}"
-                            # Startzeitpunkt zusammenbauen
-                            begin = arrow.get(datetime.datetime(int(year), int(month), int(day), event_hour, 0, 0, 0, tz.gettz("Europe/Berlin")))
-                            if ics_workaround:
-                                begin = begin.shift(days = 1)
-                            e.begin = begin.shift(days = -1 if on_day_before else 0)
-                            # Dauer eintragen bzw. ganztägigen Termin erzeugen
-                            e.duration = {"hours": duration_hour}
-                            if all_day:
-                                e.make_all_day()
-                            # Art der Abfuhr eintragen
-                            e.description = item
-                            # Event eintragen
-                            c.events.add(e)
-            except KeyError:
-                # Tabellenzellen ohne Termine ignorieren
-                continue
+with open(csv_file) as f:
+    # CSV parsen
+    csv_reader = csv.reader(f, delimiter=';', quotechar='"')
+    for row in csv_reader:
+        if row[0] == 'Wochentag':
+            # Überschrift überspringen
+            continue
+        # Mehrere Abfuhren an einem Tag zusammenfassen
+        if row[1] in d:
+            d[row[1]] =f"{d[row[1]]} / {row[2]}"
+        else:
+            d[row[1]] = row[2]
+
+# Zusammengefasste Termine ins ICS Format umandeln
+for datum, abfuhr in d.items():
+    # Event anlegen
+    e = Event()
+    # Titel zusammenbauen
+    e.name = f"Müllabfuhr{(' ' + abfuhr) if descriptive_title else ''}{offset_string if offset_hours > 0 else ''}"
+    # Startzeitpunkt zusammenbauen
+    _date = datetime.datetime.strptime(datum, "%d.%m.%Y").replace(hour=event_hour, tzinfo=tz.gettz("Europe/Berlin"))
+    begin = arrow.get(_date)
+    if ics_workaround:
+        begin = begin.shift(days = 1)
+    e.begin = begin.shift(days = -1 if on_day_before else 0)
+    # Dauer eintragen bzw. ganztägigen Termin erzeugen
+    e.duration = {"hours": duration_hour}
+    if all_day:
+        e.make_all_day()
+    # Art der Abfuhr eintragen
+    e.description = abfuhr
+    # Event eintragen
+    c.events.add(e)
+
 
 # Kalenderdatei schreiben
 with open("abfuhr.ics", "w") as f:

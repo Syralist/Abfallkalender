@@ -1,8 +1,8 @@
 Dieses Python Skript erzeugt eine ICS Kalenderdatei mit den Müllabfuhrterminen der Bremer Stadtreinigung.
 
 # Vorbereitung
-Auf der Homepage der Bremer Stadtreiniung [(Direktlink)](http://213.168.213.236/bremereb/bify/index.jsp) wählt man seine Adresse aus und bekommt dann eine Seite mit den Abfuhrterminen als Tabelle angezeigt.
-Diese Seite als HTML Datei abspeichern und im gleichen Verzeichnis ablegen wo auch das Python Skript liegt.
+Auf der Homepage der Bremer Stadtreiniung [(Direktlink)](https://www.die-bremer-stadtreinigung.de/privatkunden/entsorgung/bremer_abfallkalender-23080) wählt man seine Adresse aus und bekommt dann eine Seite mit den Abfuhrterminen als Tabelle angezeigt. Zusätzlich hat man jetzt die Option die Termine als iCal und CSV herunterzuladen.
+Die CSV Datei im gleichen Verzeichnis ablegen wo auch das Python Skript liegt.
 
 # Konfiguration
 Oben im Python Skript lassen sich einige Dinge konfigurieren:
@@ -17,6 +17,6 @@ Oben im Python Skript lassen sich einige Dinge konfigurieren:
 # Kompatibilität
 Python >=3.6
 
-getestet mit dem Abfallkalender 2018 bis 2020
+getestet mit dem Abfallkalender 2020 bis 2021
 
 Import der ics-Datei getestet mit Google Kalender
